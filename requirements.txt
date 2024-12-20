@@ -15,3 +15,4 @@ dj_database_url
 django-phonenumber-field
 phonenumbers
 youcanpay
+whitenoise
