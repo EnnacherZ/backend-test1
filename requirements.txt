@@ -1,0 +1,17 @@
+asgiref
+Django
+django-cors-headers
+djangorestframework
+djangorestframework-simplejwt
+PyJWT
+pytz
+sqlparse
+psycopg2-binary
+python-dotenv
+pillow
+psycopg2
+gunicorn
+dj_database_url
+django-phonenumber-field
+phonenumbers
+youcanpay
