@@ -138,7 +138,6 @@ def handlePayment(request):
 
 
 @api_view(['POST'])
-@csrf_exempt  # Pour le débogage uniquement
 def CreateTokenView(request):
     youcan_pay = YouCanPay.instance().use_keys(
         'pri_sandbox_a54c2b28-f8e5-4920-a440-64003',
@@ -164,7 +163,7 @@ def CreateTokenView(request):
         order_id = token_params.get('order_id'),
         success_url = token_params.get('success_url'),
         error_url = token_params.get('error_url'),
-        customer_info= customer_data
+        customer_info= customer_data,
     )
     try:
         token = youcan_pay.token.create_from(token_data) 
@@ -243,7 +242,7 @@ def event_stream_shoes():
         serializer = ShoeSerializer(shoes, many=True)
         data = json.dumps({'list_shoes': serializer.data})
         yield f"data: {smart_str(data)}\n\n"
-        time.sleep(2)  
+        time.sleep(300)  
 
 def sse_shoes(request):
         response = StreamingHttpResponse(event_stream_shoes(), content_type='text/event-stream')

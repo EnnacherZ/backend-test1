@@ -12,7 +12,8 @@ import os
 from django.core.asgi import get_asgi_application
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
-
+from django.urls import path
+from store import consumers
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ennacherstore.settings')
 
@@ -20,4 +21,12 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ennacherstore.settings')
 
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),
+    "websocket": AuthMiddlewareStack(
+        URLRouter([
+            # Ajouter vos routes WebSocket ici, si nécessaire
+        ])
+    ),
+    "http.request": URLRouter([
+        path("events/shoe_sizes/", consumers.SSEConsumer.as_asgi()),  # SSE route
+    ]),
 })
