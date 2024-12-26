@@ -18,3 +18,4 @@ youcanpay
 whitenoise
 channels
 django-cloudinary-storage
+daphne
