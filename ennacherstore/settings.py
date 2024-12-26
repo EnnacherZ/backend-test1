@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+import cloudinary
 
 load_dotenv()
 
@@ -169,7 +170,14 @@ CLOUDINARY_STORAGE = {
     'CLOUD_NAME' : 'dpuwn9hgh',   
     'API_KEY' : '798258496863312',      
     'API_SECRET': 'YQajcwOMztPJZPFkrgGdwSBcaa0',  
+
 }
+cloudinary.config( 
+    cloud_name = "dpuwn9hgh", 
+    api_key = "798258496863312", 
+    api_secret = "YQajcwOMztPJZPFkrgGdwSBcaa0", # Click 'View API Keys' above to copy your API secret
+    secure=True
+)
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 # URL d'accès aux fichiers
