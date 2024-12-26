@@ -1,6 +1,6 @@
 from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
-
+from cloudinary.models import CloudinaryField
 # Create your models here.
 
 
@@ -20,11 +20,11 @@ class Shoe(models.Model):
     price = models.FloatField(validators=[MinValueValidator(0.0)])
     newest = models.BooleanField(default=False) 
     promo = models.FloatField(validators=[MinValueValidator(0.0), MaxValueValidator(100.0)], default=0)
-    image = models.ImageField(upload_to='shoes/', default='shoes/empty.jpg')
-    image1 = models.ImageField(upload_to='shoes/', default='shoes/empty.jpg')
-    image2 = models.ImageField(upload_to='shoes/', default='shoes/empty.jpg')
-    image3 = models.ImageField(upload_to='shoes/', default='shoes/empty.jpg')
-    image4 = models.ImageField(upload_to='shoes/', default='shoes/empty.jpg')
+    image = CloudinaryField("Image", default = 'empty_q2cypk.png')
+    image1 = CloudinaryField("Image1", default = 'empty_q2cypk.png')
+    image2 = CloudinaryField("Image2", default = 'empty_q2cypk.png')
+    image3 = CloudinaryField("Image3", default = 'empty_q2cypk.png')
+    image4 = CloudinaryField("Image4", default = 'empty_q2cypk.png')
     def __str__(self):
         return "%s %s %s"%(self.category, self.ref, self.name)
 

@@ -9,11 +9,13 @@ from rest_framework import status
 from .serializers import *
 import json
 from django.views import View
-from youcanpay.youcan_pay import YouCanPay
+from youcanpay.youcan_pay import YouCanPay, APIService
+from youcanpay.models.data import Customer
 from rest_framework.permissions import AllowAny
 from youcanpay.models.token import TokenData
 from django.views.decorators.csrf import csrf_exempt
 import requests
+
 
 
 # Create your views here.
@@ -138,27 +140,37 @@ def handlePayment(request):
 @api_view(['POST'])
 @csrf_exempt  # Pour le débogage uniquement
 def CreateTokenView(request):
-        data = json.loads(request.body.decode('utf-8'))
-        dataToken = {
-            'order_id': data.get('order_id',''),
-            'pri_key': 'pri_sandbox_a54c2b28-f8e5-4920-a440-64003',
-            'amount': data.get('amount',''),
-            'currency': data.get('currency',''),
-            'success_url': 'https://google.com/',
-            'error_url': 'https://youtube.com/',
-            'customer_ip' : request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR'))}
-        headers = {
-            'Content-Type': 'application/json',  # Ajustez selon les besoins de l'API
-            # 'Authorization': 'Bearer YOUR_API_TOKEN',  # Si besoin d'authentification
-        }
-        try:
-            response = requests.post('https://youcanpay.com/api/tokenize', json=dataToken, headers=headers)
-            response.raise_for_status()  # Lève une exception pour les réponses d'erreur
-            return JsonResponse(response.json(), safe=False)  # Retourne la réponse JSON
-        except requests.exceptions.RequestException as e:
-            return JsonResponse({'error': str(e)}, status=400)
-
-        
+    youcan_pay = YouCanPay.instance().use_keys(
+        'pri_sandbox_a54c2b28-f8e5-4920-a440-64003',
+        'pub_sandbox_1bfc0387-7aea-49ab-b51e-930e5'
+    )
+    data = json.loads(request.body)
+    customer_params = data.get('customer', {})
+    token_params = data.get('tokenParams', {})
+    customer_data = Customer(
+        name = customer_params.get("name"), 
+        address = customer_params.get('address'), 
+        zip_code = customer_params.get('zip_code'), 
+        city = customer_params.get('city'), 
+        state = customer_params.get('state'), 
+        country_code = customer_params.get('country_code'), 
+        phone = customer_params.get('phone'), 
+        email = customer_params.get('email'),
+    )
+    token_data = TokenData(
+        amount = token_params.get('amount'),
+        currency = token_params.get('currency'),
+        customer_ip = token_params.get('customer'),
+        order_id = token_params.get('order_id'),
+        success_url = token_params.get('success_url'),
+        error_url = token_params.get('error_url'),
+        customer_info= customer_data
+    )
+    try:
+        token = youcan_pay.token.create_from(token_data) 
+        return JsonResponse({'token': token.id})
+    except Exception as e :
+        return JsonResponse({'message': f'error occured : {str(e)}'})
 
 
 
@@ -253,9 +265,6 @@ def event_stream_shoe_sizes():
 def sse_shoe_sizes(request):
         response = StreamingHttpResponse(event_stream_shoe_sizes(), content_type='text/event-stream')
         response['Cache-Control'] = 'no-cache'
-        origin = request.headers.get('Origin')
-        if origin in ALLOWED_ORIGINS:
-            response['Access-Control-Allow-Origin'] = origin  # Adjust as necessary
         return response
 def event_stream_newest_shoes():
     while True:

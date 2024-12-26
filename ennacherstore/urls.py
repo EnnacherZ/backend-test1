@@ -35,8 +35,9 @@ urlpatterns = [
     path('api/handlepaycheck', handlePaymentCheck),
     path('api/handlepay/', handlePayment),
     path('api/ip/', get_ip, name='get_ip'),
+    path('api/getTokenhh', CreateTokenView)
 ]
 
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root = settings.MEDIA_ROOT)
+# if settings.DEBUG:
+#     urlpatterns += static(settings.MEDIA_URL, document_root = settings.MEDIA_ROOT)
