@@ -17,4 +17,4 @@ phonenumbers
 youcanpay
 whitenoise
 channels
-cloudinary
+django-cloudinary-storage
