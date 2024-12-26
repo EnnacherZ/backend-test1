@@ -167,9 +167,9 @@ def CreateTokenView(request):
     )
     try:
         token = youcan_pay.token.create_from(token_data) 
-        return JsonResponse({'token': token.id})
+        return HttpResponse({'token': token.id})
     except Exception as e :
-        return JsonResponse({'message': f'error occured : {str(e)}'})
+        return HttpResponse({'message': f'error occured : {str(e)}'})
 
 
 
