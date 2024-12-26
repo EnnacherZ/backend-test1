@@ -19,3 +19,4 @@ whitenoise
 channels
 django-cloudinary-storage
 daphne
+twisted[http2,tls]
