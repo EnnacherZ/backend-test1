@@ -43,7 +43,11 @@ class Sandal(models.Model):
     price = models.FloatField(validators=[MinValueValidator(0.0)])
     newest = models.BooleanField(default=False) 
     promo = models.FloatField(validators=[MinValueValidator(0.0), MaxValueValidator(100.0)], default=0)
-    image = models.ImageField(upload_to='sandals/')
+    image = CloudinaryField("Image", default = 'empty_q2cypk.png')
+    image1 = CloudinaryField("Image1", default = 'empty_q2cypk.png')
+    image2 = CloudinaryField("Image2", default = 'empty_q2cypk.png')
+    image3 = CloudinaryField("Image3", default = 'empty_q2cypk.png')
+    image4 = CloudinaryField("Image4", default = 'empty_q2cypk.png')
     def __str__(self):
         return "%s %s %s"%(self.category, self.ref, self.name)
 
@@ -62,7 +66,11 @@ class Shirt(models.Model):
     price = models.FloatField(validators=[MinValueValidator(0.0)])
     newest = models.BooleanField(default=False) 
     promo = models.FloatField(validators=[MinValueValidator(0.0), MaxValueValidator(100.0)], default=0)
-    image = models.ImageField(upload_to='Shirts/')
+    image = CloudinaryField("Image", default = 'empty_q2cypk.png')
+    image1 = CloudinaryField("Image1", default = 'empty_q2cypk.png')
+    image2 = CloudinaryField("Image2", default = 'empty_q2cypk.png')
+    image3 = CloudinaryField("Image3", default = 'empty_q2cypk.png')
+    image4 = CloudinaryField("Image4", default = 'empty_q2cypk.png')
     def __str__(self):
         return "%s %s %s"%(self.category, self.ref, self.name)
     
@@ -81,7 +89,11 @@ class  Pant(models.Model):
     price = models.FloatField(validators=[MinValueValidator(0.0)])
     newest = models.BooleanField(default=False) 
     promo = models.FloatField(validators=[MinValueValidator(0.0), MaxValueValidator(100.0)], default=0)
-    image = models.ImageField(upload_to='Shirts/')
+    image = CloudinaryField("Image", default = 'empty_q2cypk.png')
+    image1 = CloudinaryField("Image1", default = 'empty_q2cypk.png')
+    image2 = CloudinaryField("Image2", default = 'empty_q2cypk.png')
+    image3 = CloudinaryField("Image3", default = 'empty_q2cypk.png')
+    image4 = CloudinaryField("Image4", default = 'empty_q2cypk.png')
     def __str__(self):
         return "%s %s %s"%(self.category, self.ref, self.name)
     

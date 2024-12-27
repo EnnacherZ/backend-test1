@@ -14,7 +14,8 @@ from youcanpay.models.data import Customer
 from rest_framework.permissions import AllowAny
 from youcanpay.models.token import TokenData
 from django.views.decorators.csrf import csrf_exempt
-import requests
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.exceptions import AuthenticationFailed
 
 
 
@@ -143,31 +144,53 @@ def CreateTokenView(request):
         'pri_sandbox_a54c2b28-f8e5-4920-a440-64003',
         'pub_sandbox_1bfc0387-7aea-49ab-b51e-930e5'
     )
-    data = json.loads(request.body)
-    customer_params = data.get('customer', {})
-    token_params = data.get('tokenParams', {})
+    # data = json.loads(request.body)
+    # customer_params = data.get('customer', {})
+    # token_params = data.get('tokenParams', {})
+    # customer_data = Customer(
+    #     name = customer_params.get("name"), 
+    #     address = customer_params.get('address'), 
+    #     zip_code = customer_params.get('zip_code'), 
+    #     city = customer_params.get('city'), 
+    #     state = customer_params.get('state'),
+    #     country_code = customer_params.get('country_code'), 
+    #     phone = customer_params.get('phone'), 
+    #     email = customer_params.get('email'),
+    # )
+    # token_data = TokenData(
+    #     amount = token_params.get('amount'),
+    #     currency = token_params.get('currency'),
+    #     customer_ip = token_params.get('customer'),
+    #     order_id = token_params.get('order_id'),
+    #     success_url = token_params.get('success_url'),
+    #     error_url = token_params.get('error_url'),
+    #     customer_info= customer_data,
+    # )
     customer_data = Customer(
-        name = customer_params.get("name"), 
-        address = customer_params.get('address'), 
-        zip_code = customer_params.get('zip_code'), 
-        city = customer_params.get('city'), 
-        state = customer_params.get('state'), 
-        country_code = customer_params.get('country_code'), 
-        phone = customer_params.get('phone'), 
-        email = customer_params.get('email'),
+        name = "customer_params.get()", 
+        address = "customer_params.get('address')", 
+        zip_code = "customer_params.get('zip_code')", 
+        city = "customer_params.get('city')", 
+        state = "customer_params.get('state')",
+        country_code = "customer_params.get('country_code')", 
+        phone = "customer_params.get('phone')", 
+        email = "customer_params.get('email')",
     )
     token_data = TokenData(
-        amount = token_params.get('amount'),
-        currency = token_params.get('currency'),
-        customer_ip = token_params.get('customer'),
-        order_id = token_params.get('order_id'),
-        success_url = token_params.get('success_url'),
-        error_url = token_params.get('error_url'),
+        amount = 10000,
+        currency = "MAD",
+        customer_ip =" token_params.get('customer')",
+        order_id = "token_params.get('order_id')",
+        success_url = "token_params.get('success_url')",
+        error_url = "token_params.get('error_url')",
         customer_info= customer_data,
     )
     try:
-        token = youcan_pay.token.create_from(token_data) 
-        return HttpResponse({'token': token.id})
+        token = YouCanPay.check_keys(
+            'pri_sandbox_a54c2b28-f8e5-4920-a440-64003',
+        'pub_sandbox_1bfc0387-7aea-49ab-b51e-930e5'
+        )
+        return HttpResponse({'token': token})
     except Exception as e :
         return HttpResponse({'message': f'error occured : {str(e)}'})
 
@@ -177,10 +200,47 @@ def get_ip(request):
     ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR'))
     return JsonResponse({'ip': ip})
 
+@api_view(['POST'])
+def getToken(request):
+    # Initialize YouCanPay with your private and public keys
+    YouCanPay.enable_sandbox_mode()
+    youcan_pay = YouCanPay.instance().use_keys(
+    "andbox_78bd7aca-5908-4829-9d07-711c",
+    "pub_sandbox_02182fd8-34fa-4250-a810-91307",
+    )
 
+    # Set up customer information
+    customer_info = Customer(
+    name="Younes",
+    address="123 street",
+    zip_code="999",
+    country_code="MA",
+    phone="+212600000000",
+    email="example@example.com",
+    )
+
+    # Define metadata for the transaction
+    metadata = {"item_id": "A123", "campaign": "Summer Sale"}
+
+    # Configure order details
+    token_params = TokenData(
+        order_id="OR238472",
+        amount="2000",
+        currency="MAD",
+        customer_ip="123.123.123.123",
+        success_url="https://google.com/success",
+        error_url="https://example.com/error",
+        customer_info=customer_info,
+        metadata=metadata,
+    )
+    try:
+        token = youcan_pay.token.create_from(token_params)
+        return HttpResponse({'token': token.get_payment_url()})
+    except Exception as e :
+        return HttpResponse({'message': f'error occured : {str(e)}'})
 
 ALLOWED_ORIGINS = [
-    'http://10.25.28.33:3000'
+    'http://192.168.1.9:3000'
 ]
 
 @api_view(['GET'])
@@ -235,22 +295,89 @@ def test(request):
         return JsonResponse({'message': f'An error occured: {str(e)}'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
+def authenticate_request(request):
+    """
+    Vérifie que la requête contient un token JWT valide et authentifie l'utilisateur.
+    """
+    try:
+        # Utilisation de JWTAuthentication pour vérifier le token
+        authentication = JWTAuthentication()
+        user, _ = authentication.authenticate(request)
+        if not user:
+            raise AuthenticationFailed('Non authentifié')
+    except Exception as e:
+        raise AuthenticationFailed(str(e))
 
-def event_stream_shoes():
+
+def event_stream_shoes(model, modelSerializer):
     while True:
-        shoes = Shoe.objects.all()
-        serializer = ShoeSerializer(shoes, many=True)
+        shoes = model.objects.all()
+        serializer = modelSerializer(shoes, many=True)
         data = json.dumps({'list_shoes': serializer.data})
         yield f"data: {smart_str(data)}\n\n"
         time.sleep(300)  
 
-def sse_shoes(request):
-        response = StreamingHttpResponse(event_stream_shoes(), content_type='text/event-stream')
+def sse(request, model, modelSerializer):
+        response = StreamingHttpResponse(event_stream_shoes(model, modelSerializer), content_type='text/event-stream')
         response['Cache-Control'] = 'no-cache'
         origin = request.headers.get('Origin')
         if origin in ALLOWED_ORIGINS:
             response['Access-Control-Allow-Origin'] = origin  # Adjust as necessary
         return response
+
+def sse_shoes(request) : 
+    return sse(request, Shoe, ShoeSerializer)
+
+
+# def event_stream_sandals():
+#     while True:
+#         shoes = Sandal.objects.all()
+#         serializer = SandalSerializer(shoes, many=True)
+#         data = json.dumps({'list_shoes': serializer.data})
+#         yield f"data: {smart_str(data)}\n\n"
+#         time.sleep(300)  
+
+# def sse_sandals(request):
+#         response = StreamingHttpResponse(event_stream_sandals(), content_type='text/event-stream')
+#         response['Cache-Control'] = 'no-cache'
+#         origin = request.headers.get('Origin')
+#         if origin in ALLOWED_ORIGINS:
+#             response['Access-Control-Allow-Origin'] = origin  # Adjust as necessary
+#         return response
+
+
+# def event_stream_shoes():
+#     while True:
+#         shoes = Shoe.objects.all()
+#         serializer = ShoeSerializer(shoes, many=True)
+#         data = json.dumps({'list_shoes': serializer.data})
+#         yield f"data: {smart_str(data)}\n\n"
+#         time.sleep(300)  
+
+# def sse_shoes(request):
+#         response = StreamingHttpResponse(event_stream_shoes(), content_type='text/event-stream')
+#         response['Cache-Control'] = 'no-cache'
+#         origin = request.headers.get('Origin')
+#         if origin in ALLOWED_ORIGINS:
+#             response['Access-Control-Allow-Origin'] = origin  # Adjust as necessary
+#         return response
+
+
+# def event_stream_shoes():
+#     while True:
+#         shoes = Shoe.objects.all()
+#         serializer = ShoeSerializer(shoes, many=True)
+#         data = json.dumps({'list_shoes': serializer.data})
+#         yield f"data: {smart_str(data)}\n\n"
+#         time.sleep(300)  
+
+# def sse_shoes(request):
+#         response = StreamingHttpResponse(event_stream_shoes(), content_type='text/event-stream')
+#         response['Cache-Control'] = 'no-cache'
+#         origin = request.headers.get('Origin')
+#         if origin in ALLOWED_ORIGINS:
+#             response['Access-Control-Allow-Origin'] = origin  # Adjust as necessary
+#         return response
 
 
 def event_stream_shoe_sizes():

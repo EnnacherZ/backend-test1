@@ -20,6 +20,8 @@ from django.conf.urls.static import static
 from django.conf import settings
 from store.views import *
 from store import consumers
+from store.models import *
+from store.serializers import *
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 urlpatterns = [
@@ -36,7 +38,7 @@ urlpatterns = [
     path('api/handlepaycheck', handlePaymentCheck),
     path('api/handlepay/', handlePayment),
     path('api/ip/', get_ip, name='get_ip'),
-    path('api/getTokenhh', CreateTokenView)
+    path('api/getTokenhh', getToken)
 ]
 
 
