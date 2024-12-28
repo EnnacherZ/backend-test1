@@ -15,11 +15,8 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
-from django.conf.urls.static import static
-from django.conf import settings
+from django.urls import path
 from store.views import *
-from store import consumers
 from store.models import *
 from store.serializers import *
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -38,7 +35,7 @@ urlpatterns = [
     path('api/handlepaycheck', handlePaymentCheck),
     path('api/handlepay/', handlePayment),
     path('api/ip/', get_ip, name='get_ip'),
-    path('api/getTokenhh', getToken)
+    path('api/getTokenhh', getTokengg)
 ]
 
 

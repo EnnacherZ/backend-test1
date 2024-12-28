@@ -1,6 +1,8 @@
 from django.shortcuts import render
 from django.utils.encoding import smart_str
 import time
+
+import requests
 from .models import *
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -195,49 +197,84 @@ def CreateTokenView(request):
         return HttpResponse({'message': f'error occured : {str(e)}'})
 
 
-
+@api_view(['POST'])
 def get_ip(request):
     ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR'))
     return JsonResponse({'ip': ip})
 
 @api_view(['POST'])
-def getToken(request):
+def getTokengg(request):
     # Initialize YouCanPay with your private and public keys
     YouCanPay.enable_sandbox_mode()
     youcan_pay = YouCanPay.instance().use_keys(
-    "andbox_78bd7aca-5908-4829-9d07-711c",
+    "pri_sandbox_a54c2b28-f8e5-4920-a440-64003",
     "pub_sandbox_02182fd8-34fa-4250-a810-91307",
     )
+    data = json.loads(request.body)
+    customer_params = data.get('customer', {})
+    token_params = data.get('tokenParams', {})
+    customer_info = Customer(
+        name = customer_params.get("name"), 
+        address = customer_params.get('address'), 
+        zip_code = customer_params.get('zip_code'), 
+        city = customer_params.get('city'), 
+        state = customer_params.get('state'),
+        country_code = customer_params.get('country_code'), 
+        phone = customer_params.get('phone'), 
+        email = customer_params.get('email'),
+    )
+    
+    token_params = TokenData(
+        amount = token_params.get('amount'),
+        currency = token_params.get('currency'),
+        customer_ip = token_params.get('customer'),
+        order_id = token_params.get('order_id'),
+        success_url = token_params.get('success_url'),
+        error_url = token_params.get('error_url'),
+        customer_info= customer_info,
+    )
+    try:
+        token = youcan_pay.token.create_from(token_params)
+        return  JsonResponse({'token': token.id})
+    except Exception as e :
+        return JsonResponse({'message': f'error occured : {str(e)}'})
+    
 
+@api_view(['POST'])
+def tokenTester(request):
+    # Enable sandbox mode for testing
+    YouCanPay.enable_sandbox_mode()
+    # Initialize YouCanPay with your private and public keys
+    youcan_pay = YouCanPay.instance().use_keys(
+        "pri_sandbox_a54c2b28-f8e5-4920-a440-64003",
+        "pub_sandbox_02182fd8-34fa-4250-a810-91307",
+        )
     # Set up customer information
     customer_info = Customer(
-    name="Younes",
-    address="123 street",
-    zip_code="999",
-    country_code="MA",
-    phone="+212600000000",
-    email="example@example.com",
+        name="Younes",
+        address="123 street",
+        zip_code="999",
+        country_code="MA",
+        phone="+212600000000",
+        email="example@example.com",
     )
-
-    # Define metadata for the transaction
-    metadata = {"item_id": "A123", "campaign": "Summer Sale"}
-
     # Configure order details
     token_params = TokenData(
         order_id="OR238472",
         amount="2000",
         currency="MAD",
         customer_ip="123.123.123.123",
-        success_url="https://google.com/success",
+        success_url="https://example.com/success",
         error_url="https://example.com/error",
         customer_info=customer_info,
-        metadata=metadata,
     )
     try:
         token = youcan_pay.token.create_from(token_params)
-        return HttpResponse({'token': token.get_payment_url()})
+        token_id = token.id
+        return JsonResponse({'token': token_id})
     except Exception as e :
-        return HttpResponse({'message': f'error occured : {str(e)}'})
+         return JsonResponse({'message': f'error occured : {str(e)}'})
+
 
 ALLOWED_ORIGINS = [
     'http://192.168.1.9:3000'
