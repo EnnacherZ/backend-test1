@@ -346,7 +346,7 @@ def authenticate_request(request):
         raise AuthenticationFailed(str(e))
 
 
-def event_stream_shoes(model, modelSerializer):
+def event_stream(model, modelSerializer):
     while True:
         shoes = model.objects.all()
         serializer = modelSerializer(shoes, many=True)
@@ -355,7 +355,7 @@ def event_stream_shoes(model, modelSerializer):
         time.sleep(300)  
 
 def sse(request, model, modelSerializer):
-        response = StreamingHttpResponse(event_stream_shoes(model, modelSerializer), content_type='text/event-stream')
+        response = StreamingHttpResponse(event_stream(model, modelSerializer), content_type='text/event-stream')
         response['Cache-Control'] = 'no-cache'
         origin = request.headers.get('Origin')
         if origin in ALLOWED_ORIGINS:
@@ -365,80 +365,22 @@ def sse(request, model, modelSerializer):
 def sse_shoes(request) : 
     return sse(request, Shoe, ShoeSerializer)
 
+def sse_sizes_shoes(request) : 
+    return sse(request, ShoeDetail, ShoeDetailSerializer)
 
-# def event_stream_sandals():
-#     while True:
-#         shoes = Sandal.objects.all()
-#         serializer = SandalSerializer(shoes, many=True)
-#         data = json.dumps({'list_shoes': serializer.data})
-#         yield f"data: {smart_str(data)}\n\n"
-#         time.sleep(300)  
+def sse_sandals(request):
+    return sse(request, Sandal, SandalSerializer)
 
-# def sse_sandals(request):
-#         response = StreamingHttpResponse(event_stream_sandals(), content_type='text/event-stream')
-#         response['Cache-Control'] = 'no-cache'
-#         origin = request.headers.get('Origin')
-#         if origin in ALLOWED_ORIGINS:
-#             response['Access-Control-Allow-Origin'] = origin  # Adjust as necessary
-#         return response
+def sse_sizes_sandals(request):
+    return sse(request, SandalDetail, SandalDetailSerializer)
 
+def sse_shirts(request):
+    return sse(request, Shirt, ShirtSerializer)
+def sse_sizes_shirts(request):
+    return sse(request, ShirtDetail, ShirtDetailSerializer)
 
-# def event_stream_shoes():
-#     while True:
-#         shoes = Shoe.objects.all()
-#         serializer = ShoeSerializer(shoes, many=True)
-#         data = json.dumps({'list_shoes': serializer.data})
-#         yield f"data: {smart_str(data)}\n\n"
-#         time.sleep(300)  
+def sse_pants(request):
+    return sse(request, PantDetail, PantDetailSerializer)
 
-# def sse_shoes(request):
-#         response = StreamingHttpResponse(event_stream_shoes(), content_type='text/event-stream')
-#         response['Cache-Control'] = 'no-cache'
-#         origin = request.headers.get('Origin')
-#         if origin in ALLOWED_ORIGINS:
-#             response['Access-Control-Allow-Origin'] = origin  # Adjust as necessary
-#         return response
-
-
-# def event_stream_shoes():
-#     while True:
-#         shoes = Shoe.objects.all()
-#         serializer = ShoeSerializer(shoes, many=True)
-#         data = json.dumps({'list_shoes': serializer.data})
-#         yield f"data: {smart_str(data)}\n\n"
-#         time.sleep(300)  
-
-# def sse_shoes(request):
-#         response = StreamingHttpResponse(event_stream_shoes(), content_type='text/event-stream')
-#         response['Cache-Control'] = 'no-cache'
-#         origin = request.headers.get('Origin')
-#         if origin in ALLOWED_ORIGINS:
-#             response['Access-Control-Allow-Origin'] = origin  # Adjust as necessary
-#         return response
-
-
-def event_stream_shoe_sizes():
-    while True:
-        shoe_sizes = ShoeDetail.objects.all()
-        serializer = ShoeDetailSerializer(shoe_sizes, many=True)
-        data = json.dumps({'list_shoeSizes': serializer.data})
-        yield f"data: {smart_str(data)}\n\n"
-        time.sleep(2)  # Adjust the frequency of updates as needed
-
-def sse_shoe_sizes(request):
-        response = StreamingHttpResponse(event_stream_shoe_sizes(), content_type='text/event-stream')
-        response['Cache-Control'] = 'no-cache'
-        return response
-def event_stream_newest_shoes():
-    while True:
-        shoes = Shoe.objects.filter(newest=True)
-        serializer = ShoeSerializer(shoes, many=True)
-        data = json.dumps({'list_shoes': serializer.data})
-        yield f"data: {smart_str(data)}\n\n"
-        time.sleep(2) 
-
-def sse_stream_newest_shoes(request):
-        response = StreamingHttpResponse(event_stream_newest_shoes(), content_type='text/event-stream')
-        response['Cache-Control'] = 'no-cache'
-        origin = request.headers.get('Origin')
-        return response
+def sse_sizes_pants(request):
+    return sse(request, Pant, PantSerializer)

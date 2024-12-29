@@ -11,10 +11,7 @@ shoe_choices= [
     ('Classic', 'Classic'),
 ]
 
-
-class Shoe(models.Model):
-    productType = models.CharField(default='Shoe', max_length=20, editable=False)
-    category = models.CharField(max_length=100, choices=shoe_choices)
+class Product(models.Model):
     ref = models.CharField(max_length=100)
     name = models.CharField(max_length=100)
     price = models.FloatField(validators=[MinValueValidator(0.0)])
@@ -25,82 +22,57 @@ class Shoe(models.Model):
     image2 = CloudinaryField("Image2", default = 'empty_q2cypk.png')
     image3 = CloudinaryField("Image3", default = 'empty_q2cypk.png')
     image4 = CloudinaryField("Image4", default = 'empty_q2cypk.png')
+    class Meta:
+        abstract = True
+
+class ProductDetail(models.Model):
+    size = models.PositiveIntegerField()
+    quantity = models.PositiveIntegerField()
+    class Meta:
+        abstract = True
+
+
+class Shoe(Product):
+    productType = models.CharField(default='Shoe', max_length=20, editable=False)
+    category = models.CharField(max_length=100, choices=shoe_choices)
     def __str__(self):
         return "%s %s %s"%(self.category, self.ref, self.name)
 
-class ShoeDetail(models.Model):
+class ShoeDetail(ProductDetail):
     productId = models.ForeignKey(Shoe,on_delete=models.CASCADE)
-    size = models.PositiveIntegerField()
-    quantity = models.PositiveIntegerField()
     def __str__(self):
         return "%s %s %s"%(self.productId, "size : " + str(self.size) , "quantity : "+str(self.quantity))
 
-class Sandal(models.Model):
+class Sandal(Product):
     productType = models.CharField(default='Sandal', max_length=20, editable=False)
     category = models.CharField(max_length=100)
-    ref = models.CharField(max_length=100)
-    name = models.CharField(max_length=100)
-    price = models.FloatField(validators=[MinValueValidator(0.0)])
-    newest = models.BooleanField(default=False) 
-    promo = models.FloatField(validators=[MinValueValidator(0.0), MaxValueValidator(100.0)], default=0)
-    image = CloudinaryField("Image", default = 'empty_q2cypk.png')
-    image1 = CloudinaryField("Image1", default = 'empty_q2cypk.png')
-    image2 = CloudinaryField("Image2", default = 'empty_q2cypk.png')
-    image3 = CloudinaryField("Image3", default = 'empty_q2cypk.png')
-    image4 = CloudinaryField("Image4", default = 'empty_q2cypk.png')
     def __str__(self):
         return "%s %s %s"%(self.category, self.ref, self.name)
 
-class SandalDetail(models.Model):
+class SandalDetail(ProductDetail):
     productId = models.ForeignKey(Sandal, on_delete=models.CASCADE)
-    size = models.PositiveIntegerField()
-    quantity = models.PositiveIntegerField()
     def __str__(self):
         return "%s %s %s"%(self.productId, self.size, self.quantity)
     
-class Shirt(models.Model):
+class Shirt(Product):
     productType = models.CharField(default='Shirt', max_length=20, editable=False)
     category = models.CharField(max_length=100)
-    ref = models.CharField(max_length=100)
-    name = models.CharField(max_length=100)
-    price = models.FloatField(validators=[MinValueValidator(0.0)])
-    newest = models.BooleanField(default=False) 
-    promo = models.FloatField(validators=[MinValueValidator(0.0), MaxValueValidator(100.0)], default=0)
-    image = CloudinaryField("Image", default = 'empty_q2cypk.png')
-    image1 = CloudinaryField("Image1", default = 'empty_q2cypk.png')
-    image2 = CloudinaryField("Image2", default = 'empty_q2cypk.png')
-    image3 = CloudinaryField("Image3", default = 'empty_q2cypk.png')
-    image4 = CloudinaryField("Image4", default = 'empty_q2cypk.png')
     def __str__(self):
         return "%s %s %s"%(self.category, self.ref, self.name)
     
-class ShirtDetail(models.Model):
+class ShirtDetail(ProductDetail):
     productId = models.ForeignKey(Shirt, on_delete=models.CASCADE)
-    size = models.CharField(max_length=100)
-    quantity = models.PositiveIntegerField()
     def __str__(self):
         return "%s %s %s"%(self.productId, self.size, self.quantity)
 
-class  Pant(models.Model):
+class  Pant(Product):
     productType = models.CharField(default='Pant', max_length=20, editable=False)
     category = models.CharField(max_length=100)
-    ref = models.CharField(max_length=100)
-    name = models.CharField(max_length=100)
-    price = models.FloatField(validators=[MinValueValidator(0.0)])
-    newest = models.BooleanField(default=False) 
-    promo = models.FloatField(validators=[MinValueValidator(0.0), MaxValueValidator(100.0)], default=0)
-    image = CloudinaryField("Image", default = 'empty_q2cypk.png')
-    image1 = CloudinaryField("Image1", default = 'empty_q2cypk.png')
-    image2 = CloudinaryField("Image2", default = 'empty_q2cypk.png')
-    image3 = CloudinaryField("Image3", default = 'empty_q2cypk.png')
-    image4 = CloudinaryField("Image4", default = 'empty_q2cypk.png')
     def __str__(self):
         return "%s %s %s"%(self.category, self.ref, self.name)
     
-class PantDetail(models.Model):
+class PantDetail(ProductDetail):
     productId = models.ForeignKey(Pant, on_delete=models.CASCADE)
-    size = models.PositiveIntegerField()
-    quantity = models.PositiveIntegerField()
     def __str__(self):
         return "%s %s %s"%(self.productId, self.size, self.quantity)
 
