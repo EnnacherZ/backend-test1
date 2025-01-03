@@ -10,6 +10,15 @@ shoe_choices= [
     ('Medical', 'Medical'),
     ('Classic', 'Classic'),
 ]
+sandal_choices=[]
+shirt_choices=[]
+pant_choices=[]
+choices = {
+    'Shoe':shoe_choices,
+    'Sandal':sandal_choices,
+    'Shirt':shirt_choices,
+    'Pant':pant_choices
+}
 
 class Product(models.Model):
     ref = models.CharField(max_length=100)
@@ -25,8 +34,14 @@ class Product(models.Model):
     class Meta:
         abstract = True
 
-class ProductDetail(models.Model):
+class ProductDetailN(models.Model):
     size = models.PositiveIntegerField()
+    quantity = models.PositiveIntegerField()
+    class Meta:
+        abstract = True
+
+class ProductDetailC(models.Model):
+    size = models.CharField(max_length=10)
     quantity = models.PositiveIntegerField()
     class Meta:
         abstract = True
@@ -38,7 +53,7 @@ class Shoe(Product):
     def __str__(self):
         return "%s %s %s"%(self.category, self.ref, self.name)
 
-class ShoeDetail(ProductDetail):
+class ShoeDetail(ProductDetailN):
     productId = models.ForeignKey(Shoe,on_delete=models.CASCADE)
     def __str__(self):
         return "%s %s %s"%(self.productId, "size : " + str(self.size) , "quantity : "+str(self.quantity))
@@ -49,7 +64,7 @@ class Sandal(Product):
     def __str__(self):
         return "%s %s %s"%(self.category, self.ref, self.name)
 
-class SandalDetail(ProductDetail):
+class SandalDetail(ProductDetailN):
     productId = models.ForeignKey(Sandal, on_delete=models.CASCADE)
     def __str__(self):
         return "%s %s %s"%(self.productId, self.size, self.quantity)
@@ -60,7 +75,7 @@ class Shirt(Product):
     def __str__(self):
         return "%s %s %s"%(self.category, self.ref, self.name)
     
-class ShirtDetail(ProductDetail):
+class ShirtDetail(ProductDetailC):
     productId = models.ForeignKey(Shirt, on_delete=models.CASCADE)
     def __str__(self):
         return "%s %s %s"%(self.productId, self.size, self.quantity)
@@ -71,7 +86,7 @@ class  Pant(Product):
     def __str__(self):
         return "%s %s %s"%(self.category, self.ref, self.name)
     
-class PantDetail(ProductDetail):
+class PantDetail(ProductDetailC):
     productId = models.ForeignKey(Pant, on_delete=models.CASCADE)
     def __str__(self):
         return "%s %s %s"%(self.productId, self.size, self.quantity)

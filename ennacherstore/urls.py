@@ -31,16 +31,20 @@ urlpatterns = [
     path('events/sandals_sizes/', sse_sizes_sandals, name='sse_sandals_sizes'),
     path('events/shirts_sizes/', sse_sizes_shirts, name='sse_shirts_sizes'),
     path('events/pants_sizes/', sse_sizes_pants, name='sse_pants_sizes'),
-    path('api/getShoes', get_shoes),
-    path('api/getNewestShoes', get_newest_shoes),
-    path('api/getShoeSizes', get_shoes_sizes),
-    path('api/test', test),
+    path('api/getShoes/', get_new_shoes),
+    path('api/getShoesNew/', sse_shoes_new),
+    path('api/getSandals/', get_new_sandals),
+    path('api/getSandalsNew/', sse_sandals_new),
+    path('api/getShirts/', get_new_shirts),
+    path('api/getShirtsNew/', sse_shirts_new),
+    path('api/getPants/', get_new_pants),
     path('api/getToken', TokenObtainPairView.as_view()),
     path('api/getToken/refresh', TokenRefreshView.as_view()),
     path('api/handlepaycheck', handlePaymentCheck),
     path('api/handlepay/', handlePayment),
     path('api/ip/', get_ip, name='get_ip'),
-    path('api/getTokenhh', getTokengg)
+    path('api/getTokenhh', getTokengg),
+    path('api/getAllProducts', get_products)
 ]
 
 
