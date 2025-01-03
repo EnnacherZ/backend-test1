@@ -8,7 +8,7 @@ class ShoeSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class ShoeDetailSerializer(serializers.ModelSerializer):
-    size = serializers.CharField(read_only=True)
+    size = serializers.CharField(source = 'size', read_only=True)
     class Meta:
         model = ShoeDetail
         fields = '__all__'
