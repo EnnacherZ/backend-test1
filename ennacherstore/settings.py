@@ -25,13 +25,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-x&^a+u6jrj5*afjwy4@^q@-y@&xg=+#rvo=^^x(5-vr68x=f2a'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('IS_DEBUG')
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = [os.environ.get('ALLOWED_HOSTS')]
+CORS_ALLOWED_ORIGINS = [os.environ.get('CORS_ALLOWED_ORIGINS')]
 
 # Application definition
 
@@ -83,17 +83,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'ennacherstore.wsgi.application'
 ASGI_APPLICATION = 'ennacherstore.asgi.application'
-
-
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            "hosts": [('127.0.0.1', 6379)],
-        },
-    },
-}
-
 
 
 # Database
@@ -153,11 +142,6 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
-CORS_ALLOW_ALL_ORIGINS = True
-
-ALLOWED_HOSTS = ['*']
-
 #Media configuartion 
 #Media cloud settings
 
@@ -168,15 +152,15 @@ ALLOWED_HOSTS = ['*']
 # MEDIA_URL = '/media/'
 # MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 CLOUDINARY_STORAGE = {
-    'CLOUD_NAME' : 'dpuwn9hgh',   
-    'API_KEY' : '798258496863312',      
-    'API_SECRET': 'YQajcwOMztPJZPFkrgGdwSBcaa0',  
+    'CLOUD_NAME' : os.environ.get('cloudinary_cloud_name'),   
+    'API_KEY' : os.environ.get('cloudinary_api_key'),      
+    'API_SECRET': os.environ.get('cloudinary_api_secret'),  
 
 }
 cloudinary.config( 
-    cloud_name = "dpuwn9hgh", 
-    api_key = "798258496863312", 
-    api_secret = "YQajcwOMztPJZPFkrgGdwSBcaa0", # Click 'View API Keys' above to copy your API secret
+    cloud_name = os.environ.get('cloudinary_cloud_name'), 
+    api_key = os.environ.get('cloudinary_api_key'), 
+    api_secret = os.environ.get('cloudinary_api_secret'), # Click 'View API Keys' above to copy your API secret
     secure=True
 )
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'

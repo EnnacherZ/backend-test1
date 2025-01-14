@@ -115,6 +115,8 @@ class ProductOrdered(models.Model):
     category = models.CharField(max_length=50)
     ref = models.CharField(max_length=50)
     name = models.CharField(max_length=50)
+    def __str__(self):
+        return "%s %s %s %s"%(self.client, self.product_type,self.category, self.name)
 
 
 

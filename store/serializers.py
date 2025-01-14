@@ -9,7 +9,7 @@ class ShoeSerializer(serializers.ModelSerializer):
 
 class ShoeDetailSerializer(serializers.ModelSerializer):
     # Sérialisation du champ 'size' en tant que chaîne de caractères
-    size = serializers.CharField(read_only=True)
+    # size = serializers.CharField(read_only=True)
     class Meta:
         model = ShoeDetail
         fields = '__all__'
@@ -20,7 +20,7 @@ class SandalSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class SandalDetailSerializer(serializers.ModelSerializer):
-    size = serializers.CharField(read_only=True)
+    # size = serializers.CharField(read_only=True)
     class Meta:
         model = SandalDetail
         fields = '__all__'
