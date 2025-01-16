@@ -1,4 +1,5 @@
 from django.utils.encoding import smart_str
+from django.shortcuts import render
 import time
 from .models import *
 from rest_framework.decorators import api_view
@@ -15,9 +16,16 @@ load_dotenv()
 key1 = os.environ.get('payment_second_key')
 key2 = os.environ.get('payment_first_key')
 allowed_origins = os.environ.get('REQUEST_ALLOWED_ORIGINS')
-
-
+is_sandbox = os.environ.get('IS_SANDBOX_MODE')
+forbbiden_message = 'Forbidden-Acces denied'
 ALLOWED_ORIGINS = [allowed_origins]
+def origin_checker(request):
+    referer = request.META.get('HTTP_REFERER','')
+    if referer in ALLOWED_ORIGINS: return False
+    else : return True
+
+
+
 # Create your views here.
 @api_view(['POST'])
 def handlePaymentCheck(request):
@@ -74,76 +82,78 @@ def data_dict(data, model, modelDetail):return({'data':data, 'model':model, 'mod
 @api_view(['POST'])
 def handlePayment(request):
     try:
-        if request.method == 'POST':
-            data = json.loads(request.body)
+        if origin_checker(request):return HttpResponseForbidden(forbbiden_message)
+        else:
+            if request.method == 'POST':
+                data = json.loads(request.body)
 
-            # Extraction des données de la requête
-            shoes_data = data.get('shirts_order', [])
-            sandals_data = data.get('shoes_order', [])
-            shirts_data = data.get('sandals_order', [])
-            pants_data = data.get('pants_order', [])
-            
-            # Créez un dictionnaire des données
-            shirts_order = data_dict(shoes_data, Shirt, ShirtDetail)
-            shoes_order = data_dict(sandals_data, Shoe, ShoeDetail)
-            sandals_order = data_dict(shirts_data, Sandal, SandalDetail)  # Corrigé ici pour utiliser Sandal et SandalDetail
-            pants_order = data_dict(pants_data, Pant, PantDetail)
-            
-            # Récupérer le transaction_id et client_data de la requête
-            transaction_id = data.get('transaction_id', '')
-            client_data = data.get('client_data', {})
-            
-            # Liste pour stocker les produits commandés
-            ordered_product = []
-            orders = [shoes_order, sandals_order, shirts_order, pants_order]
-            
-            # Parcourez toutes les commandes
-            for item in orders:
-                if len(item['data']) > 0:
-                    for p in item['data']:
-                        # Obtenez le produit selon le modèle et les détails associés
-                        prod = item['modelDetail'].objects.get(productId=p['id'], size=p['size'])
-                        prod1 = item['model'].objects.get(id=p['id'])
-                        
-                        # Si le produit est trouvé, mettez à jour la quantité et sauvegardez
-                        if prod:
-                            prod.quantity -= p['quantity']
-                            prod.save()
+                # Extraction des données de la requête
+                shoes_data = data.get('shirts_order', [])
+                sandals_data = data.get('shoes_order', [])
+                shirts_data = data.get('sandals_order', [])
+                pants_data = data.get('pants_order', [])
+                
+                # Créez un dictionnaire des données
+                shirts_order = data_dict(shoes_data, Shirt, ShirtDetail)
+                shoes_order = data_dict(sandals_data, Shoe, ShoeDetail)
+                sandals_order = data_dict(shirts_data, Sandal, SandalDetail)  # Corrigé ici pour utiliser Sandal et SandalDetail
+                pants_order = data_dict(pants_data, Pant, PantDetail)
+                
+                # Récupérer le transaction_id et client_data de la requête
+                transaction_id = data.get('transaction_id', '')
+                client_data = data.get('client_data', {})
+                
+                # Liste pour stocker les produits commandés
+                ordered_product = []
+                orders = [shoes_order, sandals_order, shirts_order, pants_order]
+                
+                # Parcourez toutes les commandes
+                for item in orders:
+                    if len(item['data']) > 0:
+                        for p in item['data']:
+                            # Obtenez le produit selon le modèle et les détails associés
+                            prod = item['modelDetail'].objects.get(productId=p['id'], size=p['size'])
+                            prod1 = item['model'].objects.get(id=p['id'])
                             
-                            # Ajoutez les informations du produit commandé à la réponse
-                            ordered_product.append({
-                                "product_type": prod1.productType,
-                                "size": p['size'],
-                                "quantity": p['quantity'],
-                                "category": prod1.category,
-                                "ref": prod1.ref,
-                                "name": prod1.name,
-                                "product_id": prod1.id
-                            })
-            if client_data:
-                new_client =Client.objects.create(
-                    transaction_id = transaction_id,
-                    order_id = client_data['OrderId'],
-                    first_name = client_data['FirstName'],
-                    last_name = client_data['LastName'],
-                    email = client_data['Email'],
-                    phone = str(client_data['Tel']),
-                    city = client_data['City'],
-                    address = client_data['Address'],
-                    amount = client_data['Amount'])
-                for p in ordered_product:
-                    ProductOrdered.objects.create(
-                        client = new_client,
-                        product_type = p["product_type"],
-                        size = p["size"],
-                        quantity = p["quantity"],
-                        category = p["category"],
-                        ref = p["ref"],
-                        name = p["name"],
-                        product_id = p["product_id"]
-                    )
-            # Retourner une réponse JSON avec la liste des produits commandés
-            return JsonResponse({'ordered_products': ordered_product}, status=200)
+                            # Si le produit est trouvé, mettez à jour la quantité et sauvegardez
+                            if prod:
+                                prod.quantity -= p['quantity']
+                                prod.save()
+                                
+                                # Ajoutez les informations du produit commandé à la réponse
+                                ordered_product.append({
+                                    "product_type": prod1.productType,
+                                    "size": p['size'],
+                                    "quantity": p['quantity'],
+                                    "category": prod1.category,
+                                    "ref": prod1.ref,
+                                    "name": prod1.name,
+                                    "product_id": prod1.id
+                                })
+                if client_data:
+                    new_client =Client.objects.create(
+                        transaction_id = transaction_id,
+                        order_id = client_data['OrderId'],
+                        first_name = client_data['FirstName'],
+                        last_name = client_data['LastName'],
+                        email = client_data['Email'],
+                        phone = str(client_data['Tel']),
+                        city = client_data['City'],
+                        address = client_data['Address'],
+                        amount = client_data['Amount'])
+                    for p in ordered_product:
+                        ProductOrdered.objects.create(
+                            client = new_client,
+                            product_type = p["product_type"],
+                            size = p["size"],
+                            quantity = p["quantity"],
+                            category = p["category"],
+                            ref = p["ref"],
+                            name = p["name"],
+                            product_id = p["product_id"]
+                        )
+                # Retourner une réponse JSON avec la liste des produits commandés
+                return JsonResponse({'ordered_products': ordered_product}, status=200)
 
     except Exception as e:
         print(e)
@@ -156,8 +166,7 @@ def get_ip(request):
 
 @api_view(['POST'])
 def getPaymentToken(request):
-    referer = request.META.get('HTTP_REFERER','')
-    YouCanPay.enable_sandbox_mode()
+    if is_sandbox: YouCanPay.enable_sandbox_mode()
     youcan_pay = YouCanPay.instance().use_keys(
     key1,
     key2,
@@ -186,10 +195,10 @@ def getPaymentToken(request):
         customer_info= customer_info,
     )
     try:
-        if referer not in ALLOWED_ORIGINS :
-            return HttpResponseForbidden("Forbidden")
-        token = youcan_pay.token.create_from(token_params)
-        return  JsonResponse({'token': token.id})
+        if origin_checker(request):return HttpResponseForbidden(forbbiden_message)
+        else:                                   
+            token = youcan_pay.token.create_from(token_params)
+            return  JsonResponse({'token': token.id})
     except Exception as e :
         return JsonResponse({'message': f'error occured : {str(e)}'})
     
@@ -198,24 +207,24 @@ def getPaymentToken(request):
 
 @api_view(['GET'])
 def get_newest_products(request,):
-    referer = request.META.get('HTTP_REFERER','')
     try:
-        if referer not in ALLOWED_ORIGINS:
-            return HttpResponseForbidden("FORBIDDEN")
-        shoes_products = Shoe.objects.filter(newest=True)
-        sandals_products = Sandal.objects.filter(newest=True)
-        shirts_products = Shirt.objects.filter(newest=True)
-        pants_products = Pant.objects.filter(newest=True)
-        shoes_serializer = ShoeSerializer(shoes_products, many=True)
-        sandals_serializer = SandalSerializer(sandals_products, many=True)
-        shirts_serializer = ShirtSerializer(shirts_products, many=True)
-        pants_serializer = PantSerializer(pants_products, many=True)
-        return JsonResponse({'list_shoes': shoes_serializer.data,
-                            'list_sandals': sandals_serializer.data,
-                            'list_shirts' : shirts_serializer.data,
-                            'list_pants':pants_serializer.data, 'hed':referer}, status=status.HTTP_200_OK
-                            )
+        if origin_checker(request):return HttpResponseForbidden(forbbiden_message)
+        else:
+            shoes_products = Shoe.objects.filter(newest=True)
+            sandals_products = Sandal.objects.filter(newest=True)
+            shirts_products = Shirt.objects.filter(newest=True)
+            pants_products = Pant.objects.filter(newest=True)
+            shoes_serializer = ShoeSerializer(shoes_products, many=True)
+            sandals_serializer = SandalSerializer(sandals_products, many=True)
+            shirts_serializer = ShirtSerializer(shirts_products, many=True)
+            pants_serializer = PantSerializer(pants_products, many=True)
+            return JsonResponse({'list_shoes': shoes_serializer.data,
+                                'list_sandals': sandals_serializer.data,
+                                'list_shirts' : shirts_serializer.data,
+                                'list_pants':pants_serializer.data,}, status=status.HTTP_200_OK
+                                )
     except Exception as e:
+        print(e)
         return JsonResponse({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -242,13 +251,12 @@ def event_stream_shoesSizes():
         yield f"data: {smart_str(data)}\n\n"
         time.sleep(2)
 def sse_shoes(request):
-        referer = request.META.get('HTTP_REFERER', '')
-        if referer not in ALLOWED_ORIGINS:
-            return HttpResponseForbidden("Accès refusé - Origine non autorisée")
+        if origin_checker(request):return HttpResponseForbidden(forbbiden_message)
         response = StreamingHttpResponse(event_stream_shoes(), content_type='text/event-stream')
         response['Cache-Control'] = 'no-cache'
         return response
 def sse_shoes_new(request):
+        if origin_checker(request):return HttpResponseForbidden(forbbiden_message)
         response = StreamingHttpResponse(event_stream_shoes_newest(), content_type='text/event-stream')
         response['Cache-Control'] = 'no-cache'
         origin = request.headers.get('Origin')
@@ -256,6 +264,7 @@ def sse_shoes_new(request):
             response['Access-Control-Allow-Origin'] = origin
         return response
 def sse_sizes_shoes(request):
+        if origin_checker(request):return HttpResponseForbidden(forbbiden_message)
         response = StreamingHttpResponse(event_stream_shoesSizes(), content_type='text/event-stream')
         response['Cache-Control'] = 'no-cache'
         origin = request.headers.get('Origin')
@@ -286,6 +295,7 @@ def event_stream_sandalsSizes():
         yield f"data: {smart_str(data)}\n\n"
         time.sleep(2)
 def sse_sandals(request):
+        if origin_checker(request):return HttpResponseForbidden(forbbiden_message)
         response = StreamingHttpResponse(event_stream_sandals(), content_type='text/event-stream')
         response['Cache-Control'] = 'no-cache'
         origin = request.headers.get('Origin')
@@ -293,6 +303,7 @@ def sse_sandals(request):
             response['Access-Control-Allow-Origin'] = origin
         return response
 def sse_sandals_new(request):
+        if origin_checker(request):return HttpResponseForbidden(forbbiden_message)
         response = StreamingHttpResponse(event_stream_sandals_newest(), content_type='text/event-stream')
         response['Cache-Control'] = 'no-cache'
         origin = request.headers.get('Origin')
@@ -300,6 +311,7 @@ def sse_sandals_new(request):
             response['Access-Control-Allow-Origin'] = origin
         return response
 def sse_sizes_sandals(request):
+        if origin_checker(request):return HttpResponseForbidden(forbbiden_message)
         response = StreamingHttpResponse(event_stream_sandalsSizes(), content_type='text/event-stream')
         response['Cache-Control'] = 'no-cache'
         origin = request.headers.get('Origin')
@@ -331,6 +343,7 @@ def event_stream_shirtsSizes():
         yield f"data: {smart_str(data)}\n\n"
         time.sleep(2)
 def sse_shirts(request):
+        if origin_checker(request):return HttpResponseForbidden(forbbiden_message)
         response = StreamingHttpResponse(event_stream_shirts(), content_type='text/event-stream')
         response['Cache-Control'] = 'no-cache'
         origin = request.headers.get('Origin')
@@ -338,6 +351,7 @@ def sse_shirts(request):
             response['Access-Control-Allow-Origin'] = origin
         return response
 def sse_shirts_new(request):
+        if origin_checker(request):return HttpResponseForbidden(forbbiden_message)
         response = StreamingHttpResponse(event_stream_shirts_newest(), content_type='text/event-stream')
         response['Cache-Control'] = 'no-cache'
         origin = request.headers.get('Origin')
@@ -345,6 +359,7 @@ def sse_shirts_new(request):
             response['Access-Control-Allow-Origin'] = origin
         return response
 def sse_sizes_shirts(request):
+        if origin_checker(request):return HttpResponseForbidden(forbbiden_message)
         response = StreamingHttpResponse(event_stream_shirtsSizes(), content_type='text/event-stream')
         response['Cache-Control'] = 'no-cache'
         origin = request.headers.get('Origin')
@@ -376,6 +391,7 @@ def event_stream_pantsSizes():
         yield f"data: {smart_str(data)}\n\n"
         time.sleep(2)
 def sse_pants(request):
+        if origin_checker(request):return HttpResponseForbidden(forbbiden_message)
         response = StreamingHttpResponse(event_stream_pants(), content_type='text/event-stream')
         response['Cache-Control'] = 'no-cache'
         origin = request.headers.get('Origin')
@@ -383,6 +399,7 @@ def sse_pants(request):
             response['Access-Control-Allow-Origin'] = origin
         return response
 def sse_pants_new(request):
+        if origin_checker(request):return HttpResponseForbidden(forbbiden_message)
         response = StreamingHttpResponse(event_stream_pants_newest(), content_type='text/event-stream')
         response['Cache-Control'] = 'no-cache'
         origin = request.headers.get('Origin')
@@ -390,6 +407,7 @@ def sse_pants_new(request):
             response['Access-Control-Allow-Origin'] = origin
         return response
 def sse_sizes_pants(request):
+        if origin_checker(request):return HttpResponseForbidden(forbbiden_message)
         response = StreamingHttpResponse(event_stream_pantsSizes(), content_type='text/event-stream')
         response['Cache-Control'] = 'no-cache'
         origin = request.headers.get('Origin')
