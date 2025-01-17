@@ -35,12 +35,15 @@ urlpatterns = [
     path('api/getSandalsNew/', sse_sandals_new),
     path('api/getShirtsNew/', sse_shirts_new),
     path('api/getToken', TokenObtainPairView.as_view()),
-    path('api/getToken/refresh', TokenRefreshView.as_view()),
-    path('api/handlepaycheck', handlePaymentCheck),
     path('api/handlepay/', handlePayment),
     path('api/ip/', get_ip, name='get_ip'),
     path('api/getPaymentToken', getPaymentToken),
-    path('api/getAllProducts', get_newest_products)
+    path('api/getAllProducts', get_newest_products),
+    path('api/getNewestShoe', get_newest_shoes),
+    path('api/getNewestSandal', get_newest_sandals),
+    path('api/getNewestShirt', get_newest_shirts),
+    path('api/getNewestPant', get_newest_pants),
+
 ]
 
 

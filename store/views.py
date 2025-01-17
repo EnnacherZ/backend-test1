@@ -26,57 +26,7 @@ def origin_checker(request):
 
 
 
-# Create your views here.
-@api_view(['POST'])
-def handlePaymentCheck(request):
-    try:
-        if request.method == 'POST':
-            data = json.loads(request.body)
-            shoes_order = (data.get('shoes_order', []), Shoe, ShoeDetail)
-            sandals_order = (data.get('sandals_order', []), Sandal, SandalDetail)
-            shirts_order = (data.get('shirts_order', []), Shirt, ShirtDetail)
-            pants_order = (data.get('pants_order', []), Pant, PantDetail)
-            all_items = [shoes_order, sandals_order, shirts_order, pants_order]
-            ordered_product = []
-            for item in all_items:
-                if len(item[0])>0:
-                    for p in item[0]:
-                        prod = item[2].objects.get(productId=p['productId'], size=p['size'])
-                        prod1 = item[1].objects.get(id = p['productId'])
-                        if prod:
-                            prod.quantity -= p['quantity']
-                            prod.save()
-                            ordered_product.append({
-                                "product_type" : prod1.productType,
-                                "size" : p['size'],
-                                "quantity" : p['quantity'],
-                                "category" : prod1.category,
-                                "ref" : prod1.ref,
-                                "name" : prod1.name,
-                                "product_id" : prod1.id
-                            })
-        return JsonResponse({'message':'success', 'orderedProducts':ordered_product}, status = status.HTTP_200_OK)
-    except Exception as e:
-        return JsonResponse({'message':f'An error occured: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
-
-def quantity_manager(data, model, modelDetail, ordered_product):
-    if len(data)>0:
-        for p in data:
-            if modelDetail == ShoeDetail or modelDetail ==SandalDetail:prod = modelDetail.objects.get(productId=p['id'], size=int(p['size']))
-            else: prod = modelDetail.objects.get(productId=p['id'], size=p['size'])
-            prod1 = model.objects.get(id = p['id'])
-            if prod:
-                prod.quantity -= p['quantity']
-                prod.save()
-                ordered_product.append({
-                    "product_type" : prod1.productType,
-                    "size" : p['size'],
-                    "quantity" : p['quantity'],
-                    "category" : prod1.category,
-                    "ref" : prod1.ref,
-                    "name" : prod1.name,
-                    "product_id" : prod1.id
-                    })               
+# Create your views here.         
      
 def data_dict(data, model, modelDetail):return({'data':data, 'model':model, 'modelDetail':modelDetail})
 @api_view(['POST'])
@@ -227,6 +177,42 @@ def get_newest_products(request,):
         print(e)
         return JsonResponse({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+@api_view(['GET'])
+def get_newest_shoes(request):
+    products = Shoe.objects.filter(newest=True)
+    products_serializers = ShoeSerializer(products, many =True)
+    try : 
+        if origin_checker(request):return HttpResponseForbidden(forbbiden_message)
+        return JsonResponse({'products' :products_serializers.data}, status=status.HTTP_200_OK)
+    except Exception as e : return JsonResponse({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR) 
+
+@api_view(['GET'])
+def get_newest_sandals(request): 
+    products = Sandal.objects.filter(newest=True)
+    products_serializers = SandalSerializer(products, many =True)
+    try : 
+        if origin_checker(request):return HttpResponseForbidden(forbbiden_message)
+        return JsonResponse({'products' :products_serializers.data}, status=status.HTTP_200_OK)
+    except Exception as e : return JsonResponse({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def get_newest_shirts(request):
+    products = Shirt.objects.filter(newest=True)
+    products_serializers = ShirtSerializer(products, many =True)
+    try :
+        if origin_checker(request):return HttpResponseForbidden(forbbiden_message)
+        return JsonResponse({'products' :products_serializers.data}, status=status.HTTP_200_OK)
+    except Exception as e : return JsonResponse({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def get_newest_pants(request):
+    products = Pant.objects.filter(newest=True)
+    products_serializers = PantSerializer(products, many =True)
+    try :
+        if origin_checker(request):return HttpResponseForbidden(forbbiden_message)
+        return JsonResponse({'products' :products_serializers.data}, status=status.HTTP_200_OK)
+    except Exception as e : return JsonResponse({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 #EventSoure functions
 def event_stream_shoes():

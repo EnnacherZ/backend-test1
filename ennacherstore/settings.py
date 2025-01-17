@@ -32,7 +32,7 @@ DEBUG = os.environ.get('IS_DEBUG')
 
 ALLOWED_HOSTS = [os.environ.get('ALLOWED_HOSTS')]
 CORS_ALLOWED_ORIGINS = [os.environ.get('CORS_ALLOWED_ORIGINS')]
-
+SECURE_SSL_REDIRECT = os.environ.get('SSL_REDIRECT')
 # Application definition
 
 INSTALLED_APPS = [
@@ -144,10 +144,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 #Media configuartion 
 #Media cloud settings
-
-
-
-
 
 # MEDIA_URL = '/media/'
 # MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
