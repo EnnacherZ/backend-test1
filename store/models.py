@@ -40,6 +40,16 @@ class ProductDetailN(models.Model):
     class Meta:
         abstract = True
 
+class ProductReviews(models.Model):
+    product_type=models.CharField(max_length=10)
+    product_id = models.IntegerField()
+    name = models.CharField(max_length=50)
+    email = models.EmailField()
+    review = models.CharField(max_length=150)
+    stars = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(5)])
+    date = models.DateTimeField()
+
+
 class ProductDetailC(models.Model):
     size = models.CharField(max_length=10)
     quantity = models.PositiveIntegerField()

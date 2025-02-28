@@ -3,7 +3,9 @@ from django.shortcuts import render
 import time
 from .models import *
 from rest_framework.decorators import api_view
-from django.http import HttpResponseForbidden, JsonResponse, StreamingHttpResponse
+from django.http import HttpResponseForbidden, JsonResponse, StreamingHttpResponse, HttpResponse
+from django.utils.dateparse import parse_datetime
+import datetime
 from rest_framework import status
 from .serializers import *
 import json
@@ -25,10 +27,14 @@ def origin_checker(request):
     else : return True
 
 
+models_dict = {'Shoe':(Shoe, ShoeSerializer, ShoeDetail, ShoeDetailSerializer), 
+               'Sandal':(Sandal, SandalSerializer, SandalDetail, SandalDetailSerializer), 
+               'Shirt':(Shirt, ShirtSerializer, ShirtDetail, ShirtDetailSerializer), 
+               'Pant':(Pant, PantSerializer, PantDetail, PantDetailSerializer)}
 
 # Create your views here.         
      
-def data_dict(data, model, modelDetail):return({'data':data, 'model':model, 'modelDetail':modelDetail})
+def data_dict(data, model, modelDetail, productType):return({'data':data, 'model':model, 'modelDetail':modelDetail, 'productType':productType})
 @api_view(['POST'])
 def handlePayment(request):
     try:
@@ -44,17 +50,17 @@ def handlePayment(request):
                 pants_data = data.get('pants_order', [])
                 
                 # Créez un dictionnaire des données
-                shirts_order = data_dict(shoes_data, Shirt, ShirtDetail)
-                shoes_order = data_dict(sandals_data, Shoe, ShoeDetail)
-                sandals_order = data_dict(shirts_data, Sandal, SandalDetail)  # Corrigé ici pour utiliser Sandal et SandalDetail
-                pants_order = data_dict(pants_data, Pant, PantDetail)
+                shirts_order = data_dict(shoes_data, Shirt, ShirtDetail, 'Shirts')
+                shoes_order = data_dict(sandals_data, Shoe, ShoeDetail, 'Shoes')
+                sandals_order = data_dict(shirts_data, Sandal, SandalDetail, 'Sandals')  # Corrigé ici pour utiliser Sandal et SandalDetail
+                pants_order = data_dict(pants_data, Pant, PantDetail, 'Pants')
                 
                 # Récupérer le transaction_id et client_data de la requête
                 transaction_id = data.get('transaction_id', '')
                 client_data = data.get('client_data', {})
                 
                 # Liste pour stocker les produits commandés
-                ordered_product = []
+                ordered_product = {'Shoes':[], 'Sandals':[], 'Shirts':[], 'Pants':[]}
                 orders = [shoes_order, sandals_order, shirts_order, pants_order]
                 
                 # Parcourez toutes les commandes
@@ -71,15 +77,17 @@ def handlePayment(request):
                                 prod.save()
                                 
                                 # Ajoutez les informations du produit commandé à la réponse
-                                ordered_product.append({
-                                    "product_type": prod1.productType,
+                                ordered_product[item['productType']].append({
+                                    "productType": prod1.productType,
                                     "size": p['size'],
                                     "quantity": p['quantity'],
                                     "category": prod1.category,
                                     "ref": prod1.ref,
                                     "name": prod1.name,
-                                    "product_id": prod1.id
-                                })
+                                    "id": prod1.id,
+                                    "image":prod1.image.url,
+                                    "promo":prod1.promo,
+                                    "price":prod1.price, })
                 if client_data:
                     new_client =Client.objects.create(
                         transaction_id = transaction_id,
@@ -91,17 +99,18 @@ def handlePayment(request):
                         city = client_data['City'],
                         address = client_data['Address'],
                         amount = client_data['Amount'])
-                    for p in ordered_product:
-                        ProductOrdered.objects.create(
-                            client = new_client,
-                            product_type = p["product_type"],
-                            size = p["size"],
-                            quantity = p["quantity"],
-                            category = p["category"],
-                            ref = p["ref"],
-                            name = p["name"],
-                            product_id = p["product_id"]
-                        )
+                    for key in ordered_product.keys():
+                        for p in ordered_product[key]:
+                            ProductOrdered.objects.create(
+                                client = new_client,
+                                product_type = p["productType"],
+                                size = p["size"],
+                                quantity = p["quantity"],
+                                category = p["category"],
+                                ref = p["ref"],
+                                name = p["name"],
+                                product_id = p["id"]
+                            )
                 # Retourner une réponse JSON avec la liste des produits commandés
                 return JsonResponse({'ordered_products': ordered_product}, status=200)
 
@@ -152,7 +161,73 @@ def getPaymentToken(request):
     except Exception as e :
         return JsonResponse({'message': f'error occured : {str(e)}'})
     
+@api_view(['POST'])
+def add_review(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            product_type = data.get('productType', '')
+            product_id = data.get('productId', None)
+            review = data.get('review', '')
+            email = data.get('email', '')
+            stars = data.get('stars', 0)
+            date_str = data.get('date', None)
+            name = data.get('name', None)
+            date = None
+            # Validation de la date (en format ISO)
+            if date_str:
+                date = datetime.datetime.fromisoformat(date_str)  # Si le format est correct, il sera converti
+                if not date:
+                    return JsonResponse({'message': 'Invalid date format'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Créer et enregistrer la nouvelle critique
+            new_review = ProductReviews(
+                product_type=product_type,
+                product_id=product_id,
+                review=review,
+                stars=stars,
+                email=email,
+                date=date,
+                name=name
+            )
+            new_review.save()
+            return JsonResponse({'message': 'Review added'}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return JsonResponse({'message': f'Error occurred: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+@api_view(['GET'])
+def get_reviews(request):
+    try:
+        pro_id = int(request.GET.get('productId'))
+        pro_type = request.GET.get('productType')
+        product_reviews = ProductReviews.objects.filter(product_id = pro_id, product_type = pro_type)
+        serialized_reviews = ProductReviewsSerializer(product_reviews, many=True)
+        products = models_dict[pro_type][0].objects.filter(newest=True)
+        serialized_products = models_dict[pro_type][1](products, many=True)
+        return JsonResponse({'reviews':serialized_reviews.data, 'products':serialized_products.data}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return JsonResponse({'message': f'Error occurred: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+@api_view(['GET'])
+def get_searched_product(request):
+    try:
+        prod= request.GET.get('product',None)
+        cat = request.GET.get('category',None)
+        ref = request.GET.get('ref',None)
+        pid = int(request.GET.get('id',None))
+        data_dict = models_dict[prod]
+        searched_product = data_dict[0].objects.filter(category=cat, ref=ref, id=pid)
+        serialized = data_dict[1](searched_product, many=True)
+        product_reviews = ProductReviews.objects.filter(product_id = pid, product_type = prod)
+        serialized_reviews = ProductReviewsSerializer(product_reviews, many=True)
+        products = models_dict[prod][0].objects.filter(newest=True)
+        serialized_products = models_dict[prod][1](products, many=True)
+        return JsonResponse({"product":serialized.data, "products":serialized_products.data, 'reviews':serialized_reviews.data}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return JsonResponse({'message': f'error occured : {str(e)}'})   
 
 
 @api_view(['GET'])
@@ -213,6 +288,12 @@ def get_newest_pants(request):
         if origin_checker(request):return HttpResponseForbidden(forbbiden_message)
         return JsonResponse({'products' :products_serializers.data}, status=status.HTTP_200_OK)
     except Exception as e : return JsonResponse({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+    
+
+
 
 #EventSoure functions
 def event_stream_shoes():

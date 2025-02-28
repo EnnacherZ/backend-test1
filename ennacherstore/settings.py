@@ -32,7 +32,7 @@ DEBUG = os.environ.get('IS_DEBUG')
 
 ALLOWED_HOSTS = [os.environ.get('ALLOWED_HOSTS')]
 CORS_ALLOWED_ORIGINS = [os.environ.get('CORS_ALLOWED_ORIGINS')]
-SECURE_SSL_REDIRECT = os.environ.get('SSL_REDIRECT')
+# SECURE_SSL_REDIRECT = os.environ.get(False)
 # Application definition
 
 INSTALLED_APPS = [
