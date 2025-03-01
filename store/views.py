@@ -221,7 +221,7 @@ def get_searched_product(request):
         data_dict = models_dict[prod]
         searched_product = data_dict[0].objects.filter(category=cat, ref=ref, id=pid)
         serialized = data_dict[1](searched_product, many=True)
-        product_reviews = ProductReviews.objects.filter(product_id = pid, product_type = prod)
+        product_reviews = ProductReviews.objects.filter(product_id = pid, product_type = prod).order_by('-stars')
         serialized_reviews = ProductReviewsSerializer(product_reviews, many=True)
         products = models_dict[prod][0].objects.filter(newest=True)
         serialized_products = models_dict[prod][1](products, many=True)
