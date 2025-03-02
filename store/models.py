@@ -111,6 +111,7 @@ class Client(models.Model):
     city = models.CharField(max_length=50)
     address = models.CharField(max_length=100)
     amount = models.PositiveIntegerField()
+    date = models.CharField(max_length=100, default="")
     verificaton_status = models.BooleanField(default=False)
 
     def __str__(self):

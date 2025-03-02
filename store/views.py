@@ -98,7 +98,8 @@ def handlePayment(request):
                         phone = str(client_data['Tel']),
                         city = client_data['City'],
                         address = client_data['Address'],
-                        amount = client_data['Amount'])
+                        amount = client_data['Amount'],
+                        date = client_data['date'])
                     for key in ordered_product.keys():
                         for p in ordered_product[key]:
                             ProductOrdered.objects.create(
