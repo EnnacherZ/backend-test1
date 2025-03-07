@@ -2,7 +2,7 @@ from django.utils.encoding import smart_str
 from django.shortcuts import render
 import time
 from .models import *
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from django.http import HttpResponseForbidden, JsonResponse, StreamingHttpResponse, HttpResponse
 from django.utils.dateparse import parse_datetime
 import datetime
@@ -39,7 +39,9 @@ models_dict = {'Shoe':(Shoe, ShoeSerializer, ShoeDetail, ShoeDetailSerializer),
 # Create your views here.         
      
 def data_dict(data, model, modelDetail, productType):return({'data':data, 'model':model, 'modelDetail':modelDetail, 'productType':productType})
+
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def handlePayment(request):
     try:
         if origin_checker(request):return HttpResponseForbidden(forbbiden_message)
@@ -138,11 +140,13 @@ def handlePayment(request):
         return JsonResponse({'message': f'An error occurred: {str(e)}'}, status=400)
                     
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def get_ip(request):
     ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR'))
     return JsonResponse({'ip': ip})
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def getPaymentToken(request):
     if is_sandbox: YouCanPay.enable_sandbox_mode()
     youcan_pay = YouCanPay.instance().use_keys(
@@ -181,6 +185,7 @@ def getPaymentToken(request):
         return JsonResponse({'message': f'error occured : {str(e)}'})
     
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def add_review(request):
     if request.method == 'POST':
         if origin_checker(request):return HttpResponseForbidden(forbbiden_message)
@@ -218,6 +223,7 @@ def add_review(request):
 
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def get_reviews(request):
     if origin_checker(request): return HttpResponseForbidden(forbbiden_message)
     else:
@@ -235,6 +241,7 @@ def get_reviews(request):
 
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def get_searched_product(request):
     if origin_checker(request) : return HttpResponseForbidden(forbbiden_message)
     else:
@@ -256,6 +263,7 @@ def get_searched_product(request):
 
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def get_newest_products(request,):
     try:
         if origin_checker(request):return HttpResponseForbidden(forbbiden_message)
@@ -279,6 +287,7 @@ def get_newest_products(request,):
 
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def get_newest_shoes(request):
     products = Shoe.objects.filter(newest=True)
     products_serializers = ShoeSerializer(products, many =True)
@@ -288,6 +297,7 @@ def get_newest_shoes(request):
     except Exception as e : return JsonResponse({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR) 
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def get_newest_sandals(request): 
     products = Sandal.objects.filter(newest=True)
     products_serializers = SandalSerializer(products, many =True)
@@ -297,6 +307,7 @@ def get_newest_sandals(request):
     except Exception as e : return JsonResponse({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def get_newest_shirts(request):
     products = Shirt.objects.filter(newest=True)
     products_serializers = ShirtSerializer(products, many =True)
@@ -306,6 +317,7 @@ def get_newest_shirts(request):
     except Exception as e : return JsonResponse({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def get_newest_pants(request):
     products = Pant.objects.filter(newest=True)
     products_serializers = PantSerializer(products, many =True)
@@ -315,6 +327,7 @@ def get_newest_pants(request):
     except Exception as e : return JsonResponse({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def get_req(request):
     referer = request.META.get('X-Forwarded-For','none')
     return JsonResponse({'req':origin_checker(request)})
