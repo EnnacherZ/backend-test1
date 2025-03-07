@@ -130,5 +130,12 @@ class ProductOrdered(models.Model):
     def __str__(self):
         return "%s %s %s %s"%(self.client, self.product_type,self.category, self.name)
 
-
+class QuantityExceptions(models.Model):
+    client = models.ForeignKey(Client, on_delete=models.CASCADE)
+    product_type = models.CharField(max_length=20)
+    product_category = models.CharField(max_length=50)
+    product_ref = models.PositiveIntegerField()
+    product_name = models.CharField(max_length=50)
+    product_size = models.CharField(max_length=50)
+    delta_quantity = models.PositiveIntegerField()
 

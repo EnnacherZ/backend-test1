@@ -1,6 +1,5 @@
 from django.contrib import admin
 from store.models import *
-from django.utils.html import mark_safe
 # Register your models here.
 
 admin.site.register(ShoeDetail)
@@ -14,3 +13,4 @@ admin.site.register(Client)
 admin.site.register(ProductOrdered)
 admin.site.register(Shoe)
 admin.site.register(ProductReviews)
+admin.site.register(QuantityExceptions)

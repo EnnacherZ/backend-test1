@@ -14,6 +14,10 @@ from dotenv import load_dotenv
 from youcanpay.youcan_pay import YouCanPay
 from youcanpay.models.data import Customer
 from youcanpay.models.token import TokenData
+from django.contrib.auth.models import User
+from rest_framework import generics
+from rest_framework.permissions import AllowAny, IsAuthenticated
+
 load_dotenv()
 key1 = os.environ.get('payment_second_key')
 key2 = os.environ.get('payment_first_key')
@@ -58,10 +62,23 @@ def handlePayment(request):
                 # Récupérer le transaction_id et client_data de la requête
                 transaction_id = data.get('transaction_id', '')
                 client_data = data.get('client_data', {})
-                
+                trans_date = data.get('date','')
                 # Liste pour stocker les produits commandés
                 ordered_product = {'Shoes':[], 'Sandals':[], 'Shirts':[], 'Pants':[]}
                 orders = [shoes_order, sandals_order, shirts_order, pants_order]
+
+                if client_data:
+                    new_client =Client.objects.create(
+                        transaction_id = transaction_id,
+                        order_id = client_data['OrderId'],
+                        first_name = client_data['FirstName'],
+                        last_name = client_data['LastName'],
+                        email = client_data['Email'],
+                        phone = str(client_data['Tel']),
+                        city = client_data['City'],
+                        address = client_data['Address'],
+                        amount = client_data['Amount'],
+                        date = trans_date)
                 
                 # Parcourez toutes les commandes
                 for item in orders:
@@ -73,7 +90,19 @@ def handlePayment(request):
                             
                             # Si le produit est trouvé, mettez à jour la quantité et sauvegardez
                             if prod:
-                                prod.quantity -= p['quantity']
+                                if prod.quantity >= p['quantity']:
+                                    prod.quantity -= p['quantity']
+                                else :
+                                    delta = p['quantity'] - prod.quantity
+                                    prod.quantity=0
+                                    new_exception = QuantityExceptions(client = new_client,
+                                                                       product_type = prod1.productType,
+                                                                       product_category = prod1.category,
+                                                                       product_ref = prod1.ref,
+                                                                       product_name=prod1.name,
+                                                                       product_size=p['size'],
+                                                                       delta_quantity = delta)
+                                    new_exception.save()
                                 prod.save()
                                 
                                 # Ajoutez les informations du produit commandé à la réponse
@@ -88,18 +117,7 @@ def handlePayment(request):
                                     "image":prod1.image.url,
                                     "promo":prod1.promo,
                                     "price":prod1.price, })
-                if client_data:
-                    new_client =Client.objects.create(
-                        transaction_id = transaction_id,
-                        order_id = client_data['OrderId'],
-                        first_name = client_data['FirstName'],
-                        last_name = client_data['LastName'],
-                        email = client_data['Email'],
-                        phone = str(client_data['Tel']),
-                        city = client_data['City'],
-                        address = client_data['Address'],
-                        amount = client_data['Amount'],
-                        date = client_data['date'])
+                if new_client:
                     for key in ordered_product.keys():
                         for p in ordered_product[key]:
                             ProductOrdered.objects.create(
@@ -165,70 +183,76 @@ def getPaymentToken(request):
 @api_view(['POST'])
 def add_review(request):
     if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            product_type = data.get('productType', '')
-            product_id = data.get('productId', None)
-            review = data.get('review', '')
-            email = data.get('email', '')
-            stars = data.get('stars', 0)
-            date_str = data.get('date', None)
-            name = data.get('name', None)
-            date = None
-            # Validation de la date (en format ISO)
-            if date_str:
-                date = datetime.datetime.fromisoformat(date_str)  # Si le format est correct, il sera converti
-                if not date:
-                    return JsonResponse({'message': 'Invalid date format'}, status=status.HTTP_400_BAD_REQUEST)
-            
-            # Créer et enregistrer la nouvelle critique
-            new_review = ProductReviews(
-                product_type=product_type,
-                product_id=product_id,
-                review=review,
-                stars=stars,
-                email=email,
-                date=date,
-                name=name
-            )
-            new_review.save()
-            return JsonResponse({'message': 'Review added'}, status=status.HTTP_200_OK)
-        except Exception as e:
-            return JsonResponse({'message': f'Error occurred: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        if origin_checker(request):return HttpResponseForbidden(forbbiden_message)
+        else:
+            try:
+                data = json.loads(request.body)
+                product_type = data.get('productType', '')
+                product_id = data.get('productId', None)
+                review = data.get('review', '')
+                email = data.get('email', '')
+                stars = data.get('stars', 0)
+                date_str = data.get('date', None)
+                name = data.get('name', None)
+                date = None
+                # Validation de la date (en format ISO)
+                if date_str:
+                    date = datetime.datetime.fromisoformat(date_str)  # Si le format est correct, il sera converti
+                    if not date:
+                        return JsonResponse({'message': 'Invalid date format'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                # Créer et enregistrer la nouvelle critique
+                new_review = ProductReviews(
+                    product_type=product_type,
+                    product_id=product_id,
+                    review=review,
+                    stars=stars,
+                    email=email,
+                    date=date,
+                    name=name
+                )
+                new_review.save()
+                return JsonResponse({'message': 'Review added'}, status=status.HTTP_200_OK)
+            except Exception as e:
+                return JsonResponse({'message': f'Error occurred: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['GET'])
 def get_reviews(request):
-    try:
-        pro_id = int(request.GET.get('productId'))
-        pro_type = request.GET.get('productType')
-        product_reviews = ProductReviews.objects.filter(product_id = pro_id, product_type = pro_type)
-        serialized_reviews = ProductReviewsSerializer(product_reviews, many=True)
-        products = models_dict[pro_type][0].objects.filter(newest=True)
-        serialized_products = models_dict[pro_type][1](products, many=True)
-        return JsonResponse({'reviews':serialized_reviews.data, 'products':serialized_products.data}, status=status.HTTP_200_OK)
-    except Exception as e:
-        return JsonResponse({'message': f'Error occurred: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    if origin_checker(request): return HttpResponseForbidden(forbbiden_message)
+    else:
+        try:
+            pro_id = int(request.GET.get('productId'))
+            pro_type = request.GET.get('productType')
+            product_reviews = ProductReviews.objects.filter(product_id = pro_id, product_type = pro_type)
+            serialized_reviews = ProductReviewsSerializer(product_reviews, many=True)
+            products = models_dict[pro_type][0].objects.filter(newest=True)
+            serialized_products = models_dict[pro_type][1](products, many=True)
+            return JsonResponse({'reviews':serialized_reviews.data, 'products':serialized_products.data}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return JsonResponse({'message': f'Error occurred: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 
 @api_view(['GET'])
 def get_searched_product(request):
-    try:
-        prod= request.GET.get('product',None)
-        cat = request.GET.get('category',None)
-        ref = request.GET.get('ref',None)
-        pid = int(request.GET.get('id',None))
-        data_dict = models_dict[prod]
-        searched_product = data_dict[0].objects.filter(category=cat, ref=ref, id=pid)
-        serialized = data_dict[1](searched_product, many=True)
-        product_reviews = ProductReviews.objects.filter(product_id = pid, product_type = prod).order_by('-stars')
-        serialized_reviews = ProductReviewsSerializer(product_reviews, many=True)
-        products = models_dict[prod][0].objects.filter(newest=True)
-        serialized_products = models_dict[prod][1](products, many=True)
-        return JsonResponse({"product":serialized.data, "products":serialized_products.data, 'reviews':serialized_reviews.data}, status=status.HTTP_200_OK)
-    except Exception as e:
-        return JsonResponse({'message': f'error occured : {str(e)}'})   
+    if origin_checker(request) : return HttpResponseForbidden(forbbiden_message)
+    else:
+        try:
+            prod= request.GET.get('product',None)
+            cat = request.GET.get('category',None)
+            ref = request.GET.get('ref',None)
+            pid = int(request.GET.get('id',None))
+            data_dict = models_dict[prod]
+            searched_product = data_dict[0].objects.filter(category=cat, ref=ref, id=pid)
+            serialized = data_dict[1](searched_product, many=True)
+            product_reviews = ProductReviews.objects.filter(product_id = pid, product_type = prod).order_by('-stars')
+            serialized_reviews = ProductReviewsSerializer(product_reviews, many=True)
+            products = models_dict[prod][0].objects.filter(newest=True)
+            serialized_products = models_dict[prod][1](products, many=True)
+            return JsonResponse({"product":serialized.data, "products":serialized_products.data, 'reviews':serialized_reviews.data}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return JsonResponse({'message': f'error occured : {str(e)}'})   
 
 
 @api_view(['GET'])
@@ -290,6 +314,10 @@ def get_newest_pants(request):
         return JsonResponse({'products' :products_serializers.data}, status=status.HTTP_200_OK)
     except Exception as e : return JsonResponse({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+@api_view(['GET'])
+def get_req(request):
+    referer = request.META.get('X-Forwarded-For','none')
+    return JsonResponse({'req':origin_checker(request)})
 
 
     
@@ -485,3 +513,7 @@ def sse_sizes_pants(request):
 
 
 
+class CreateUserView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [AllowAny]
