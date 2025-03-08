@@ -1,10 +1,9 @@
 from django.utils.encoding import smart_str
-from django.shortcuts import render
 import time
 from .models import *
 from rest_framework.decorators import api_view, permission_classes
-from django.http import HttpResponseForbidden, JsonResponse, StreamingHttpResponse, HttpResponse
-from django.utils.dateparse import parse_datetime
+from rest_framework.permissions import AllowAny
+from django.http import HttpResponseForbidden, JsonResponse, StreamingHttpResponse
 import datetime
 from rest_framework import status
 from .serializers import *
@@ -14,9 +13,6 @@ from dotenv import load_dotenv
 from youcanpay.youcan_pay import YouCanPay
 from youcanpay.models.data import Customer
 from youcanpay.models.token import TokenData
-from django.contrib.auth.models import User
-from rest_framework import generics
-from rest_framework.permissions import AllowAny, IsAuthenticated
 
 load_dotenv()
 key1 = os.environ.get('payment_second_key')
@@ -39,7 +35,6 @@ models_dict = {'Shoe':(Shoe, ShoeSerializer, ShoeDetail, ShoeDetailSerializer),
 # Create your views here.         
      
 def data_dict(data, model, modelDetail, productType):return({'data':data, 'model':model, 'modelDetail':modelDetail, 'productType':productType})
-
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def handlePayment(request):
@@ -326,6 +321,24 @@ def get_newest_pants(request):
         return JsonResponse({'products' :products_serializers.data}, status=status.HTTP_200_OK)
     except Exception as e : return JsonResponse({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_products(request):
+    if not(origin_checker(request)):
+        try:
+            productType = request.GET.get('productType',None)
+            type_models :tuple = models_dict[productType]
+            products = type_models[0].objects.all()
+            products_details = type_models[2].objects.all()
+            serialized_products = type_models[1](products, many=True)
+            serialized_details = type_models[3](products_details, many=True)
+            return JsonResponse({'products':serialized_products.data, 'products_details':serialized_details.data}, status=status.HTTP_200_OK)
+        except Exception as e : return JsonResponse({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    else : return HttpResponseForbidden(forbbiden_message) 
+
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_req(request):
@@ -524,9 +537,3 @@ def sse_sizes_pants(request):
             response['Access-Control-Allow-Origin'] = origin
         return response
 
-
-
-class CreateUserView(generics.CreateAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-    permission_classes = [AllowAny]
